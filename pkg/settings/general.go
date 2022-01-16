@@ -9,21 +9,21 @@ import (
 func (w *SettingsWindow) makeGeneral() *container.TabItem {
 	bAutostart := widget.NewCheck("Run on start", nil)
 	bSystray := widget.NewCheck("Hide to systray", nil)
-	sNotificationRoll := widget.NewSlider(.5, 3)
-	sNotificationRoll.Bind(w.config.NotificationRoll)
-	sNotificationRoll.Step = 0.5
-	bNotifications := widget.NewCheck("Send notifications", nil)
+	sReminderAdvance := widget.NewSlider(.5, 3)
+	sReminderAdvance.Bind(w.config.ReminderAdvance)
+	sReminderAdvance.Step = 0.5
+	bReminder := widget.NewCheck("Reminder notifications", nil)
 	bFullscreen := widget.NewCheck("Fullscreen nudge window", nil)
 	bAllScreens := widget.NewCheck("Cover all screens", nil)
 	bWindow := widget.NewCheck("Show nudge window", nil)
 
-	sRoll := binding.FloatToStringWithFormat(w.config.NotificationRoll, "%1.1f min")
-	tNotificationRoll := widget.NewLabelWithData(sRoll)
+	sAdvance := binding.FloatToStringWithFormat(w.config.ReminderAdvance, "%1.1f min")
+	tReminderAdvance := widget.NewLabelWithData(sAdvance)
 
 	bAutostart.Bind(w.config.AutoStart)
 	bSystray.Bind(w.config.Systray)
 
-	bNotifications.Bind(w.config.SendNotifications)
+	bReminder.Bind(w.config.ReminderNotification)
 	bFullscreen.Bind(w.config.FullScreenWindow)
 	bAllScreens.Bind(w.config.AllScreens)
 	bWindow.Bind(w.config.ShowWindow)
@@ -38,15 +38,15 @@ func (w *SettingsWindow) makeGeneral() *container.TabItem {
 		bFullscreen.Refresh()
 		fWindow(b)
 	}
-	fNotifications := bNotifications.OnChanged
-	bNotifications.OnChanged = func(b bool) {
+	fReminder := bReminder.OnChanged
+	bReminder.OnChanged = func(b bool) {
 		if b {
-			sNotificationRoll.Show()
+			sReminderAdvance.Show()
 		} else {
-			sNotificationRoll.Hide()
+			sReminderAdvance.Hide()
 		}
-		sNotificationRoll.Refresh()
-		fNotifications(b)
+		sReminderAdvance.Refresh()
+		fReminder(b)
 	}
 
 	bAutostart.Disable()
@@ -55,8 +55,8 @@ func (w *SettingsWindow) makeGeneral() *container.TabItem {
 	items := []*widget.FormItem{
 		widget.NewFormItem("", bAutostart),
 		widget.NewFormItem("", bSystray),
-		widget.NewFormItem("", bNotifications),
-		widget.NewFormItem("", container.NewBorder(nil, nil, nil, tNotificationRoll, sNotificationRoll)),
+		widget.NewFormItem("", bReminder),
+		widget.NewFormItem("", container.NewBorder(nil, nil, nil, tReminderAdvance, sReminderAdvance)),
 		widget.NewFormItem("", bWindow),
 		widget.NewFormItem("", bFullscreen),
 		widget.NewFormItem("", bAllScreens),

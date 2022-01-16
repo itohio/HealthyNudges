@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	NOTIFICATIONS_SEND       = "nudge.notification"
-	NOTIFICATIONS_ROLL       = "nudge.notification.roll"
+	REMINDER_NOTIFICATION    = "nudge.reminder"
+	REMINDER_ADVANCE         = "nudge.reminder.advance"
 	NUDGE_WINDOW_SHOW        = "nudge.window.show"
 	NUDGE_WINDOW_FULLSCREEN  = "nudge.window.fullscreen"
 	NUDGE_WINDOW_ALL_SCREENS = "nudge.window.allscreens"
@@ -84,11 +84,11 @@ type Config struct {
 	Systray   binding.Bool
 
 	// UI config
-	SendNotifications binding.Bool
-	ShowWindow        binding.Bool
-	FullScreenWindow  binding.Bool
-	AllScreens        binding.Bool
-	NotificationRoll  binding.Float
+	ReminderNotification binding.Bool
+	ShowWindow           binding.Bool
+	FullScreenWindow     binding.Bool
+	AllScreens           binding.Bool
+	ReminderAdvance      binding.Float
 
 	// Exceptions config
 	Exceptions binding.UntypedList
@@ -99,16 +99,16 @@ type Config struct {
 
 func New(app fyne.App) *Config {
 	ret := &Config{
-		app:               app,
-		AutoStart:         binding.NewBool(),
-		Systray:           binding.NewBool(),
-		SendNotifications: binding.NewBool(),
-		ShowWindow:        binding.NewBool(),
-		FullScreenWindow:  binding.NewBool(),
-		AllScreens:        binding.NewBool(),
-		NotificationRoll:  binding.NewFloat(),
-		Exceptions:        binding.NewUntypedList(),
-		Nudges:            binding.NewUntypedList(),
+		app:                  app,
+		AutoStart:            binding.NewBool(),
+		Systray:              binding.NewBool(),
+		ReminderNotification: binding.NewBool(),
+		ShowWindow:           binding.NewBool(),
+		FullScreenWindow:     binding.NewBool(),
+		AllScreens:           binding.NewBool(),
+		ReminderAdvance:      binding.NewFloat(),
+		Exceptions:           binding.NewUntypedList(),
+		Nudges:               binding.NewUntypedList(),
 	}
 	ret.Read()
 
@@ -116,7 +116,7 @@ func New(app fyne.App) *Config {
 }
 
 func (c *Config) NotificationRollDur() time.Duration {
-	val, _ := c.NotificationRoll.Get()
+	val, _ := c.ReminderAdvance.Get()
 	return time.Duration(float64(time.Minute) * val)
 }
 
@@ -136,11 +136,11 @@ func (c *Config) ReadGeneral() {
 	p := c.app.Preferences()
 	c.AutoStart.Set(p.BoolWithFallback(AUTO_START, true))
 	c.Systray.Set(p.BoolWithFallback(HIDE_TO_SYSTRAY, true))
-	c.SendNotifications.Set(p.BoolWithFallback(NOTIFICATIONS_SEND, true))
+	c.ReminderNotification.Set(p.BoolWithFallback(REMINDER_NOTIFICATION, true))
 	c.ShowWindow.Set(p.BoolWithFallback(NUDGE_WINDOW_SHOW, true))
 	c.FullScreenWindow.Set(p.BoolWithFallback(NUDGE_WINDOW_FULLSCREEN, true))
 	c.AllScreens.Set(p.BoolWithFallback(NUDGE_WINDOW_ALL_SCREENS, true))
-	c.NotificationRoll.Set(p.FloatWithFallback(NOTIFICATIONS_ROLL, 1))
+	c.ReminderAdvance.Set(p.FloatWithFallback(REMINDER_ADVANCE, 1))
 }
 
 func (c *Config) WriteGeneral() {
@@ -149,16 +149,16 @@ func (c *Config) WriteGeneral() {
 	p.SetBool(AUTO_START, bVal)
 	bVal, _ = c.Systray.Get()
 	p.SetBool(HIDE_TO_SYSTRAY, bVal)
-	bVal, _ = c.SendNotifications.Get()
-	p.SetBool(NOTIFICATIONS_SEND, bVal)
+	bVal, _ = c.ReminderNotification.Get()
+	p.SetBool(REMINDER_NOTIFICATION, bVal)
 	bVal, _ = c.ShowWindow.Get()
 	p.SetBool(NUDGE_WINDOW_SHOW, bVal)
 	bVal, _ = c.FullScreenWindow.Get()
 	p.SetBool(NUDGE_WINDOW_FULLSCREEN, bVal)
 	bVal, _ = c.AllScreens.Get()
 	p.SetBool(NUDGE_WINDOW_ALL_SCREENS, bVal)
-	fVal, _ := c.NotificationRoll.Get()
-	p.SetFloat(NOTIFICATIONS_ROLL, fVal)
+	fVal, _ := c.ReminderAdvance.Get()
+	p.SetFloat(REMINDER_ADVANCE, fVal)
 }
 
 func (c *Config) ReadExceptions() {
