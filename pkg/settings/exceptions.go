@@ -86,7 +86,8 @@ func (w *SettingsWindow) makeExceptions() *container.TabItem {
 		}),
 	)
 
-	items := []*widget.FormItem{
+	const ITEMS = 6
+	items := [6]*widget.FormItem{
 		widget.NewFormItem("", eName),
 		widget.NewFormItem("", bActive),
 		widget.NewFormItem("", bExactMatch),
@@ -94,13 +95,19 @@ func (w *SettingsWindow) makeExceptions() *container.TabItem {
 		widget.NewFormItem("", sHow),
 		widget.NewFormItem("", controls),
 	}
-	items[0].HintText = "Exception details"
-	items[1].HintText = "Window must be active(type = title)"
-	items[2].HintText = "Title/Process exact match"
-	items[3].HintText = "Type of the exception"
-	items[4].HintText = "How to apply the exception"
 
-	form.Items = items
+	for i, hint := range [ITEMS]string{
+		"Exception details",
+		"Window must be active(type = title)",
+		"Title/Process exact match",
+		"Type of the exception",
+		"How to apply the exception",
+		"",
+	} {
+		items[i].HintText = hint
+	}
+
+	form.Items = items[:]
 
 	form.CancelText = "Defaults"
 	form.SubmitText = "Save"

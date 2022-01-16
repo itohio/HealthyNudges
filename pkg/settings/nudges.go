@@ -127,7 +127,8 @@ func (w *SettingsWindow) makeNudges() *container.TabItem {
 		}),
 	)
 
-	items := []*widget.FormItem{
+	const ITEMS = 10
+	items := [ITEMS]*widget.FormItem{
 		widget.NewFormItem("", eName),
 		widget.NewFormItem("", bWindow),
 		widget.NewFormItem("", bNotification),
@@ -139,17 +140,22 @@ func (w *SettingsWindow) makeNudges() *container.TabItem {
 		widget.NewFormItem("", sPeriods),
 		widget.NewFormItem("", controls),
 	}
-	items[0].HintText = "Nudge name"
-	items[1].HintText = "Show a window"
-	items[2].HintText = "Send a notification"
-	items[3].HintText = "The nudge is active"
-	items[4].HintText = "Type of the nudge"
-	items[5].HintText = "Work duration"
-	items[6].HintText = "Short rest duration"
-	items[7].HintText = "Long rest duration"
-	items[8].HintText = "Number of short rests before long rest"
+	for i, hint := range [ITEMS]string{
+		"Nudge name",
+		"Show a window",
+		"Send a notification",
+		"The nudge is active",
+		"Type of the nudge",
+		"Work duration",
+		"Short rest duration",
+		"Long rest duration",
+		"Number of short rests before long rest",
+		"",
+	} {
+		items[i].HintText = hint
+	}
 
-	form.Items = items
+	form.Items = items[:]
 
 	form.CancelText = "Defaults"
 	form.SubmitText = "Save"

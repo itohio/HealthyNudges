@@ -11,6 +11,7 @@ import (
 
 const (
 	REMINDER_NOTIFICATION    = "nudge.reminder"
+	REMINDER_BEEP            = "nudge.reminder.beep"
 	REMINDER_ADVANCE         = "nudge.reminder.advance"
 	NUDGE_WINDOW_SHOW        = "nudge.window.show"
 	NUDGE_WINDOW_FULLSCREEN  = "nudge.window.fullscreen"
@@ -85,6 +86,8 @@ type Config struct {
 
 	// UI config
 	ReminderNotification binding.Bool
+	ReminderBeep         binding.Bool
+	BeepSound            binding.String
 	ShowWindow           binding.Bool
 	FullScreenWindow     binding.Bool
 	AllScreens           binding.Bool
@@ -103,6 +106,7 @@ func New(app fyne.App) *Config {
 		AutoStart:            binding.NewBool(),
 		Systray:              binding.NewBool(),
 		ReminderNotification: binding.NewBool(),
+		ReminderBeep:         binding.NewBool(),
 		ShowWindow:           binding.NewBool(),
 		FullScreenWindow:     binding.NewBool(),
 		AllScreens:           binding.NewBool(),
@@ -137,6 +141,7 @@ func (c *Config) ReadGeneral() {
 	c.AutoStart.Set(p.BoolWithFallback(AUTO_START, true))
 	c.Systray.Set(p.BoolWithFallback(HIDE_TO_SYSTRAY, true))
 	c.ReminderNotification.Set(p.BoolWithFallback(REMINDER_NOTIFICATION, true))
+	c.ReminderBeep.Set(p.BoolWithFallback(REMINDER_BEEP, true))
 	c.ShowWindow.Set(p.BoolWithFallback(NUDGE_WINDOW_SHOW, true))
 	c.FullScreenWindow.Set(p.BoolWithFallback(NUDGE_WINDOW_FULLSCREEN, true))
 	c.AllScreens.Set(p.BoolWithFallback(NUDGE_WINDOW_ALL_SCREENS, true))
@@ -151,6 +156,8 @@ func (c *Config) WriteGeneral() {
 	p.SetBool(HIDE_TO_SYSTRAY, bVal)
 	bVal, _ = c.ReminderNotification.Get()
 	p.SetBool(REMINDER_NOTIFICATION, bVal)
+	bVal, _ = c.ReminderBeep.Get()
+	p.SetBool(REMINDER_BEEP, bVal)
 	bVal, _ = c.ShowWindow.Get()
 	p.SetBool(NUDGE_WINDOW_SHOW, bVal)
 	bVal, _ = c.FullScreenWindow.Get()

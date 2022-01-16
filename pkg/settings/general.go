@@ -13,6 +13,7 @@ func (w *SettingsWindow) makeGeneral() *container.TabItem {
 	sReminderAdvance.Bind(w.config.ReminderAdvance)
 	sReminderAdvance.Step = 0.5
 	bReminder := widget.NewCheck("Reminder notifications", nil)
+	bReminderBeep := widget.NewCheck("Reminder Beep", nil)
 	bFullscreen := widget.NewCheck("Fullscreen nudge window", nil)
 	bAllScreens := widget.NewCheck("Cover all screens", nil)
 	bWindow := widget.NewCheck("Show nudge window", nil)
@@ -24,6 +25,7 @@ func (w *SettingsWindow) makeGeneral() *container.TabItem {
 	bSystray.Bind(w.config.Systray)
 
 	bReminder.Bind(w.config.ReminderNotification)
+	bReminderBeep.Bind(w.config.ReminderBeep)
 	bFullscreen.Bind(w.config.FullScreenWindow)
 	bAllScreens.Bind(w.config.AllScreens)
 	bWindow.Bind(w.config.ShowWindow)
@@ -52,24 +54,32 @@ func (w *SettingsWindow) makeGeneral() *container.TabItem {
 	bAutostart.Disable()
 	bSystray.Disable()
 
-	items := []*widget.FormItem{
+	const ITEMS = 8
+	items := [ITEMS]*widget.FormItem{
 		widget.NewFormItem("", bAutostart),
 		widget.NewFormItem("", bSystray),
+		widget.NewFormItem("", bReminderBeep),
 		widget.NewFormItem("", bReminder),
 		widget.NewFormItem("", container.NewBorder(nil, nil, nil, tReminderAdvance, sReminderAdvance)),
 		widget.NewFormItem("", bWindow),
 		widget.NewFormItem("", bFullscreen),
 		widget.NewFormItem("", bAllScreens),
 	}
-	items[0].HintText = "Automatically starts when the user logs in."
-	items[1].HintText = "Hide this window to Systray."
-	items[2].HintText = "Sends system notifications before main period expires."
-	items[3].HintText = "Send notifications the amount of minutes prior period expiry."
-	items[4].HintText = "Displays a splash window with nudge information."
-	items[5].HintText = "Show nudge window full screen."
-	items[6].HintText = "Show nudge window on all screens."
 
-	form := widget.NewForm(items...)
+	for i, hint := range [ITEMS]string{
+		"Automatically starts when the user logs in.",
+		"Hide this window to Systray.",
+		"Remind about a nudge using sound.",
+		"Remind about a nudge using notifications.",
+		"Remind about a nudge a set amount of minutes prior.",
+		"Displays a splash window with nudge information.",
+		"Show nudge window full screen.",
+		"Show nudge window on all screens.",
+	} {
+		items[i].HintText = hint
+	}
+
+	form := widget.NewForm(items[:]...)
 	form.CancelText = "Defaults"
 	form.SubmitText = "Save"
 
