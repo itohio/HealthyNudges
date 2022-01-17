@@ -2,7 +2,10 @@ module github.com/itohio/HealthyNudges
 
 go 1.17
 
-require fyne.io/fyne/v2 v2.1.2
+require (
+	fyne.io/fyne/v2 v2.1.2
+	github.com/robfig/cron/v3 v3.0.1
+)
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect

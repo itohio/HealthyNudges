@@ -47,12 +47,13 @@ const (
 	NudgeExcercise
 	NudgeMeal
 	NudgePomodoro
+	NudgeReminder
 )
 
 var (
-	ExceptionOptions = []string{"Window Title", "OS Process", "Times"}
+	ExceptionOptions = []string{"Window Title", "OS Process", "Times (cron format)"}
 	HowOptions       = []string{"Pause all nudges", "Stop all nudges", "Ignore this exception"}
-	NudgeOptions     = []string{"Rest regularly", "Meditate regularly", "Excercise regularly", "Have a healthy meal", "Pomodoro timer"}
+	NudgeOptions     = []string{"Rest regularly", "Meditate regularly", "Excercise regularly", "Have a healthy meal", "Pomodoro timer", "Reminder (cron format)"}
 )
 
 type Exception struct {
@@ -65,10 +66,11 @@ type Exception struct {
 
 type Nudge struct {
 	Name         string    `json:"name"`
+	Description  string    `json:"description"`
 	Type         NudgeType `json:"type"`
 	Notification bool      `json:"notification"`
 	Window       bool      `json:"window"`
-	ActiveRule   string    `json:"rule"`
+	Schedule     string    `json:"schedule"`
 	Work         float64   `json:"work_duration"`
 	ShortRest    float64   `json:"short_rest_duration"`
 	LongRest     float64   `json:"long_rest_duration"`
@@ -264,7 +266,7 @@ func (c *Config) GetException(id int) (*Exception, bool) {
 }
 
 func (c *Config) GetNudge(id int) (*Nudge, bool) {
-	e, err := c.Exceptions.GetItem(id)
+	e, err := c.Nudges.GetItem(id)
 	if err != nil {
 		return nil, false
 	}

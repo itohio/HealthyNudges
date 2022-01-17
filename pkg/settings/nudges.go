@@ -1,11 +1,15 @@
 package settings
 
 import (
+	"fmt"
+	"log"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/widget"
 	"github.com/itohio/HealthyNudges/pkg/config"
+	"github.com/itohio/HealthyNudges/pkg/nudge"
 )
 
 func makeSlider(min, max, step float64, format string) (binding.Float, *fyne.Container) {
@@ -22,6 +26,8 @@ func makeSlider(min, max, step float64, format string) (binding.Float, *fyne.Con
 
 func (w *SettingsWindow) makeNudges() *container.TabItem {
 	eName := widget.NewEntry()
+	eDescription := widget.NewEntry()
+	eSchedule := widget.NewEntry()
 	bWindow := widget.NewCheck("Show window", nil)
 	bNotification := widget.NewCheck("Send notification", nil)
 	bActive := widget.NewCheck("Nudge is active", func(b bool) {
@@ -58,6 +64,16 @@ func (w *SettingsWindow) makeNudges() *container.TabItem {
 	fShort.Set(15)
 	fLong.Set(20)
 
+	eSchedule.Validator = func(val string) error {
+		if config.NudgeType(sType.SelectedIndex()) != config.NudgeReminder {
+			return nil
+		}
+		if val == "" {
+			return fmt.Errorf("Must be proper cron string, such as `Minute Hour DOM Month DOW`")
+		}
+		return nudge.ValidateSchedule(val)
+	}
+
 	tNudges := widget.NewListWithData(
 		w.config.Nudges,
 		func() fyne.CanvasObject {
@@ -92,9 +108,12 @@ func (w *SettingsWindow) makeNudges() *container.TabItem {
 		}
 		nudge, ok := w.config.GetNudge(id)
 		if !ok {
+			log.Println("Could not find a nudge ", id)
 			return
 		}
 		eName.SetText(nudge.Name)
+		eDescription.SetText(nudge.Description)
+		eSchedule.SetText(nudge.Schedule)
 		bWindow.SetChecked(nudge.Window)
 		bNotification.SetChecked(nudge.Notification)
 		sType.SetSelectedIndex(int(nudge.Type))
@@ -107,11 +126,11 @@ func (w *SettingsWindow) makeNudges() *container.TabItem {
 	form := widget.NewForm()
 	controls := container.NewHBox(
 		widget.NewButton("Add", func() {
-			w.addNudge(eName.Text, bWindow.Checked, bNotification.Checked, sType.Selected, fWork, fShort, fLong, fPeriods)
+			w.addNudge(eName.Text, eDescription.Text, eSchedule.Text, bWindow.Checked, bNotification.Checked, sType.Selected, fWork, fShort, fLong, fPeriods)
 			form.Refresh()
 		}),
 		widget.NewButton("Update", func() {
-			w.updateNudge(nuSelected, eName.Text, bWindow.Checked, bNotification.Checked, sType.Selected, fWork, fShort, fLong, fPeriods)
+			w.updateNudge(nuSelected, eDescription.Text, eSchedule.Text, eName.Text, bWindow.Checked, bNotification.Checked, sType.Selected, fWork, fShort, fLong, fPeriods)
 			tNudges.Refresh()
 		}),
 		widget.NewButton("Delete", func() {
@@ -127,9 +146,11 @@ func (w *SettingsWindow) makeNudges() *container.TabItem {
 		}),
 	)
 
-	const ITEMS = 10
+	const ITEMS = 12
 	items := [ITEMS]*widget.FormItem{
 		widget.NewFormItem("", eName),
+		widget.NewFormItem("", eDescription),
+		widget.NewFormItem("", eSchedule),
 		widget.NewFormItem("", bWindow),
 		widget.NewFormItem("", bNotification),
 		widget.NewFormItem("", bActive),
@@ -142,6 +163,8 @@ func (w *SettingsWindow) makeNudges() *container.TabItem {
 	}
 	for i, hint := range [ITEMS]string{
 		"Nudge name",
+		"Long Description",
+		"Schedule (cron format)",
 		"Show a window",
 		"Send a notification",
 		"The nudge is active",
@@ -161,17 +184,17 @@ func (w *SettingsWindow) makeNudges() *container.TabItem {
 	form.SubmitText = "Save"
 
 	form.OnCancel = func() {
-		w.config.ReadExceptions()
+		w.config.ReadNudges()
 		tNudges.Refresh()
 	}
 	form.OnSubmit = func() {
-		w.config.WriteExceptions()
+		w.config.WriteNudges()
 	}
 
 	return container.NewTabItem("Nudges", container.NewBorder(nil, form, nil, nil, container.NewMax(tNudges)))
 }
 
-func (w *SettingsWindow) makeNudge(name string, window, notification bool, nudgeType string, fWork, fShort, fLong, fPeriods binding.Float) *config.Nudge {
+func (w *SettingsWindow) makeNudge(name, descr, rule string, window, notification bool, nudgeType string, fWork, fShort, fLong, fPeriods binding.Float) *config.Nudge {
 	work, _ := fWork.Get()
 	short, _ := fWork.Get()
 	long, _ := fWork.Get()
@@ -179,6 +202,8 @@ func (w *SettingsWindow) makeNudge(name string, window, notification bool, nudge
 
 	e := &config.Nudge{
 		Name:         name,
+		Description:  descr,
+		Schedule:     rule,
 		Window:       window,
 		Notification: notification,
 		Type:         config.NudgeToType(nudgeType),
@@ -191,16 +216,16 @@ func (w *SettingsWindow) makeNudge(name string, window, notification bool, nudge
 	return e
 }
 
-func (w *SettingsWindow) addNudge(name string, window, notification bool, nudgeType string, fWork, fShort, fLong, fPeriods binding.Float) {
+func (w *SettingsWindow) addNudge(name, descr, rule string, window, notification bool, nudgeType string, fWork, fShort, fLong, fPeriods binding.Float) {
 	if name == "" {
 		return
 	}
 
-	e := w.makeNudge(name, window, notification, nudgeType, fWork, fShort, fLong, fPeriods)
+	e := w.makeNudge(name, descr, rule, window, notification, nudgeType, fWork, fShort, fLong, fPeriods)
 	w.config.Nudges.Append(e)
 }
 
-func (w *SettingsWindow) updateNudge(id int, name string, window, notification bool, nudgeType string, fWork, fShort, fLong, fPeriods binding.Float) {
+func (w *SettingsWindow) updateNudge(id int, name, descr, rule string, window, notification bool, nudgeType string, fWork, fShort, fLong, fPeriods binding.Float) {
 	if id < 0 || name == "" {
 		return
 	}
@@ -210,7 +235,7 @@ func (w *SettingsWindow) updateNudge(id int, name string, window, notification b
 		return
 	}
 
-	n := w.makeNudge(name, window, notification, nudgeType, fWork, fShort, fLong, fPeriods)
+	n := w.makeNudge(name, descr, rule, window, notification, nudgeType, fWork, fShort, fLong, fPeriods)
 	n.Runtime = nudge.Runtime
 
 	w.config.Nudges.SetValue(id, n)

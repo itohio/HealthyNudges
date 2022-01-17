@@ -1,22 +1,36 @@
 package settings
 
 import (
+	"fmt"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/widget"
 	"github.com/itohio/HealthyNudges/pkg/config"
+	"github.com/itohio/HealthyNudges/pkg/nudge"
 )
 
 func (w *SettingsWindow) makeExceptions() *container.TabItem {
+	form := widget.NewForm()
 	eName := widget.NewEntry()
 	bActive := widget.NewCheck("Window must be active", nil)
 	bExactMatch := widget.NewCheck("Exact match", nil)
-	sType := widget.NewSelect(config.ExceptionOptions, nil)
+	sType := widget.NewSelect(config.ExceptionOptions, func(s string) { form.Refresh() })
 	sHow := widget.NewSelect(config.HowOptions, nil)
 
 	sType.SetSelectedIndex(int(config.ExceptionToType("")))
 	sHow.SetSelectedIndex(int(config.HowToType("")))
+
+	eName.Validator = func(val string) error {
+		if config.ExceptionType(sType.SelectedIndex()) != config.Times {
+			return nil
+		}
+		if val == "" {
+			return fmt.Errorf("Must be proper cron string, such as `Minute Hour DOM Month DOW`")
+		}
+		return nudge.ValidateSchedule(val)
+	}
 
 	tExceptions := widget.NewListWithData(
 		w.config.Exceptions,
@@ -63,13 +77,19 @@ func (w *SettingsWindow) makeExceptions() *container.TabItem {
 		sHow.SetSelectedIndex(int(e.How))
 	}
 
-	form := widget.NewForm()
 	controls := container.NewHBox(
 		widget.NewButton("Add", func() {
+			defer form.Refresh()
+			if eName.Validator(eName.Text) != nil {
+				return
+			}
 			w.addException(eName.Text, bActive.Checked, bExactMatch.Checked, sType.Selected, sHow.Selected)
-			form.Refresh()
 		}),
 		widget.NewButton("Update", func() {
+			defer form.Refresh()
+			if eName.Validator(eName.Text) != nil {
+				return
+			}
 			w.updateException(exSelected, eName.Text, bActive.Checked, bExactMatch.Checked, sType.Selected, sHow.Selected)
 			tExceptions.Refresh()
 		}),

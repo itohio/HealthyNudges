@@ -2,6 +2,7 @@ package nudge
 
 import (
 	"context"
+	"log"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -40,12 +41,15 @@ func (s *Nudger) Start() {
 func (s *Nudger) Nudge() {
 	nudges, err := s.config.Nudges.Get()
 	if err != nil {
+		log.Println("Could not get nudges: ", err)
 		return
 	}
 	exceptions, err := s.config.Exceptions.Get()
 	if err != nil {
+		log.Println("Could not get exceptions: ", err)
 		return
 	}
+	how := s.checkExceptions(exceptions)
 
 	for _, nudge := range nudges {
 		n, ok := nudge.(*config.Nudge)
@@ -54,7 +58,7 @@ func (s *Nudger) Nudge() {
 		}
 		rt := s.runtime(n)
 		if rt != nil {
-			rt.Run(n, exceptions)
+			rt.Run(s.config, n, how)
 		}
 	}
 }
@@ -66,6 +70,7 @@ func (s *Nudger) runtime(nudge *config.Nudge) *nudgeRuntime {
 
 	rt, ok := nudge.Runtime.(*nudgeRuntime)
 	if !ok {
+		log.Println("Wrong runtime type")
 		return nil
 	}
 
