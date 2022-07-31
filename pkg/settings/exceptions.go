@@ -2,6 +2,7 @@ package settings
 
 import (
 	"fmt"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -12,26 +13,29 @@ import (
 )
 
 func (w *SettingsWindow) makeExceptions() *container.TabItem {
-	form := widget.NewForm()
 	eName := widget.NewEntry()
 	bActive := widget.NewCheck("Window must be active", nil)
 	bExactMatch := widget.NewCheck("Exact match", nil)
-	sType := widget.NewSelect(config.ExceptionOptions, func(s string) { form.Refresh() })
+	sType := widget.NewSelect(config.ExceptionOptions, nil)
 	sHow := widget.NewSelect(config.HowOptions, nil)
 
 	sType.SetSelectedIndex(int(config.ExceptionToType("")))
 	sHow.SetSelectedIndex(int(config.HowToType("")))
 
 	eName.Validator = func(val string) error {
-		if config.ExceptionType(sType.SelectedIndex()) != config.Times {
-			return nil
+		switch {
+		case config.ExceptionType(sType.SelectedIndex()) == config.Times:
+			return nudge.ValidateSchedule(val)
+		case config.ExceptionType(sType.SelectedIndex()) == config.UserIdle:
+			_, err := time.ParseDuration(val)
+			return err
+		case len(val) < 3:
+			return fmt.Errorf("Name must be at least 3 symbols.")
 		}
-		if val == "" {
-			return fmt.Errorf("Must be proper cron string, such as `Minute Hour DOM Month DOW`")
-		}
-		return nudge.ValidateSchedule(val)
+		return nil
 	}
 
+	form := widget.NewForm()
 	tExceptions := widget.NewListWithData(
 		w.config.Exceptions,
 		func() fyne.CanvasObject {
@@ -70,11 +74,15 @@ func (w *SettingsWindow) makeExceptions() *container.TabItem {
 		if !ok {
 			return
 		}
+		sType.SetSelectedIndex(int(e.Type))
+		sHow.SetSelectedIndex(int(e.How))
 		eName.SetText(e.Name)
 		bActive.SetChecked(e.Active)
 		bExactMatch.SetChecked(e.ExactMatch)
-		sType.SetSelectedIndex(int(e.Type))
-		sHow.SetSelectedIndex(int(e.How))
+	}
+
+	sType.OnChanged = func(s string) {
+		form.Refresh()
 	}
 
 	controls := container.NewHBox(
@@ -107,7 +115,7 @@ func (w *SettingsWindow) makeExceptions() *container.TabItem {
 	)
 
 	const ITEMS = 6
-	items := [6]*widget.FormItem{
+	items := [ITEMS]*widget.FormItem{
 		widget.NewFormItem("", eName),
 		widget.NewFormItem("", bActive),
 		widget.NewFormItem("", bExactMatch),
@@ -140,7 +148,7 @@ func (w *SettingsWindow) makeExceptions() *container.TabItem {
 		w.config.WriteExceptions()
 	}
 
-	return container.NewTabItem("Exceptions", container.NewBorder(nil, form, nil, nil, container.NewMax(tExceptions)))
+	return container.NewTabItem("Exceptions", container.NewBorder(nil, form, nil, nil, tExceptions))
 }
 
 func (w *SettingsWindow) makeException(name string, active, exactMatch bool, t, h string) *config.Exception {

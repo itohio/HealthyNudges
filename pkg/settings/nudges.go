@@ -14,14 +14,15 @@ import (
 
 func makeSlider(min, max, step float64, format string) (binding.Float, *fyne.Container) {
 	flt := binding.NewFloat()
+	return flt, makeSliderWithData(flt, min, max, step, format)
 
-	slider := widget.NewSlider(min, max)
-	slider.Bind(flt)
-	slider.Step = step
+	// slider := widget.NewSlider(min, max)
+	// slider.Bind(flt)
+	// slider.Step = step
 
-	sflt := binding.FloatToStringWithFormat(flt, format)
-	label := widget.NewLabelWithData(sflt)
-	return flt, container.NewBorder(nil, nil, nil, label, slider)
+	// sflt := binding.FloatToStringWithFormat(flt, format)
+	// label := widget.NewLabelWithData(sflt)
+	// return flt, container.NewBorder(nil, nil, nil, label, slider)
 }
 
 func (w *SettingsWindow) makeNudges() *container.TabItem {
@@ -54,7 +55,7 @@ func (w *SettingsWindow) makeNudges() *container.TabItem {
 	sType := widget.NewSelect(config.NudgeOptions, nil)
 	sType.SetSelectedIndex(int(config.NudgeToType("")))
 
-	fPeriods, sPeriods := makeSlider(1, 8, 1, "%2.0f min")
+	fPeriods, sPeriods := makeSlider(1, 8, 1, "%2.0f rests")
 	fWork, sWork := makeSlider(0, 60, .5, "%2.1f min")
 	fShort, sShort := makeSlider(3, 60, .5, "%2.1f min")
 	fLong, sLong := makeSlider(3, 120, .5, "%2.1f min")
@@ -64,6 +65,18 @@ func (w *SettingsWindow) makeNudges() *container.TabItem {
 	fShort.Set(15)
 	fLong.Set(20)
 
+	eName.Validator = func(val string) error {
+		if len(val) < 3 {
+			return fmt.Errorf("Name of the nudge must be at least 3 symbols")
+		}
+		return nil
+	}
+	eDescription.Validator = func(val string) error {
+		if len(val) < 16 {
+			return fmt.Errorf("Desription must be at least 16 symbols")
+		}
+		return nil
+	}
 	eSchedule.Validator = func(val string) error {
 		if config.NudgeType(sType.SelectedIndex()) != config.NudgeReminder {
 			return nil
@@ -94,13 +107,18 @@ func (w *SettingsWindow) makeNudges() *container.TabItem {
 			}
 			row := co.(*fyne.Container)
 			t, ok := row.Objects[0].(*widget.Label)
-			t.SetText(config.NudgeOptions[nudge.Type])
+			if int(nudge.Type) >= len(config.NudgeOptions) {
+				t.SetText(fmt.Sprintf("Unknown type: %v", nudge.Type))
+			} else {
+				t.SetText(config.NudgeOptions[nudge.Type])
+			}
 			n, ok := row.Objects[1].(*widget.Label)
 			n.SetText(nudge.Name)
 		},
 	)
 
 	nuSelected := -1
+	form := widget.NewForm()
 	tNudges.OnSelected = func(id widget.ListItemID) {
 		nuSelected = id
 		if id < 0 {
@@ -111,26 +129,25 @@ func (w *SettingsWindow) makeNudges() *container.TabItem {
 			log.Println("Could not find a nudge ", id)
 			return
 		}
+		sType.SetSelectedIndex(int(nudge.Type))
 		eName.SetText(nudge.Name)
 		eDescription.SetText(nudge.Description)
 		eSchedule.SetText(nudge.Schedule)
 		bWindow.SetChecked(nudge.Window)
 		bNotification.SetChecked(nudge.Notification)
-		sType.SetSelectedIndex(int(nudge.Type))
 		fWork.Set(nudge.Work)
 		fShort.Set(nudge.ShortRest)
 		fLong.Set(nudge.LongRest)
 		fPeriods.Set(float64(nudge.WorkPeriods))
 	}
 
-	form := widget.NewForm()
 	controls := container.NewHBox(
 		widget.NewButton("Add", func() {
 			w.addNudge(eName.Text, eDescription.Text, eSchedule.Text, bWindow.Checked, bNotification.Checked, sType.Selected, fWork, fShort, fLong, fPeriods)
 			form.Refresh()
 		}),
 		widget.NewButton("Update", func() {
-			w.updateNudge(nuSelected, eDescription.Text, eSchedule.Text, eName.Text, bWindow.Checked, bNotification.Checked, sType.Selected, fWork, fShort, fLong, fPeriods)
+			w.updateNudge(nuSelected, eName.Text, eDescription.Text, eSchedule.Text, bWindow.Checked, bNotification.Checked, sType.Selected, fWork, fShort, fLong, fPeriods)
 			tNudges.Refresh()
 		}),
 		widget.NewButton("Delete", func() {
@@ -191,14 +208,14 @@ func (w *SettingsWindow) makeNudges() *container.TabItem {
 		w.config.WriteNudges()
 	}
 
-	return container.NewTabItem("Nudges", container.NewBorder(nil, form, nil, nil, container.NewMax(tNudges)))
+	return container.NewTabItem("Nudges", container.NewBorder(nil, form, nil, nil, tNudges))
 }
 
 func (w *SettingsWindow) makeNudge(name, descr, rule string, window, notification bool, nudgeType string, fWork, fShort, fLong, fPeriods binding.Float) *config.Nudge {
 	work, _ := fWork.Get()
-	short, _ := fWork.Get()
-	long, _ := fWork.Get()
-	periods, _ := fWork.Get()
+	short, _ := fShort.Get()
+	long, _ := fLong.Get()
+	periods, _ := fPeriods.Get()
 
 	e := &config.Nudge{
 		Name:         name,

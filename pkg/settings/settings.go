@@ -1,7 +1,7 @@
 package settings
 
 import (
-	"log"
+	"sync"
 
 	"github.com/itohio/HealthyNudges/pkg/config"
 
@@ -12,6 +12,7 @@ import (
 
 type SettingsWindow struct {
 	fyne.Window
+	sync.Mutex
 	app      fyne.App
 	tabs     *container.AppTabs
 	config   *config.Config
@@ -19,6 +20,11 @@ type SettingsWindow struct {
 }
 
 func (s *SettingsWindow) Write(data []byte) (int, error) {
+	s.Lock()
+	defer s.Unlock()
+	if ok, _ := s.config.EnableLogs.Get(); !ok {
+		return len(data), nil
+	}
 	str, _ := s.bindLogs.Get()
 	s.bindLogs.Set(string(data) + str)
 	return len(data), nil
@@ -33,7 +39,7 @@ func New(app fyne.App, config *config.Config) *SettingsWindow {
 	ret.Window = app.NewWindow("Healthy Nudges Settings")
 	ret.Window.Resize(fyne.NewSize(600, 900))
 
-	log.SetOutput(ret)
+	// log.SetOutput(ret)
 
 	// ret.Window.SetCloseIntercept(func() {
 	// 	dialog.ShowConfirm(
@@ -58,5 +64,6 @@ func New(app fyne.App, config *config.Config) *SettingsWindow {
 	)
 
 	ret.Window.SetContent(ret.tabs)
+	ret.Window.SetMaster()
 	return ret
 }

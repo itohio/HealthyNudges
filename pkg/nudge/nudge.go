@@ -65,18 +65,19 @@ func (s *Nudger) Nudge() {
 
 func (s *Nudger) runtime(nudge *config.Nudge) *nudgeRuntime {
 	if nudge.Runtime == nil {
-		s.makeRuntime(nudge)
+		return s.makeRuntime(nudge)
 	}
 
 	rt, ok := nudge.Runtime.(*nudgeRuntime)
 	if !ok {
-		log.Println("Wrong runtime type")
-		return nil
+		return s.makeRuntime(nudge)
 	}
 
 	return rt
 }
 
-func (s *Nudger) makeRuntime(nudge *config.Nudge) {
-	nudge.Runtime = newRuntime(nudge)
+func (s *Nudger) makeRuntime(nudge *config.Nudge) *nudgeRuntime {
+	rt := newRuntime(nudge)
+	nudge.Runtime = rt
+	return rt
 }

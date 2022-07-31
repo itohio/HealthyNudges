@@ -12,5 +12,7 @@ func (w *SettingsWindow) makeLogs() *container.TabItem {
 	logs.ActionItem = widget.NewButtonWithIcon("", theme.ContentClearIcon(), func() {
 		w.bindLogs.Set("")
 	})
-	return container.NewTabItem("Logs", logs)
+	logs.Disable()
+	enable := widget.NewCheckWithData("Enable logs", w.config.EnableLogs)
+	return container.NewTabItem("Logs", container.NewBorder(enable, nil, nil, nil, logs))
 }

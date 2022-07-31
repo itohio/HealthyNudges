@@ -18,6 +18,9 @@ const (
 	NUDGE_WINDOW_ALL_SCREENS = "nudge.window.allscreens"
 	AUTO_START               = "app.autostart"
 	HIDE_TO_SYSTRAY          = "app.systray"
+	ENABLE_LOGS              = "app.logs.enable"
+	MAX_IMAGE_WIDTH          = "nudge.image.width"
+	MAX_IMAGE_HEIGHT         = "nudge.image.height"
 
 	NUM_EXCEPTIONS = "except.num"
 	FMT_EXCEPTION  = "except.%d"
@@ -33,6 +36,7 @@ type NudgeType int
 const (
 	WindowTitle ExceptionType = iota
 	Process
+	UserIdle
 	Times
 )
 const (
@@ -43,17 +47,13 @@ const (
 )
 const (
 	NudgeRest NudgeType = iota
-	NudgeMeditate
-	NudgeExcercise
-	NudgeMeal
-	NudgePomodoro
 	NudgeReminder
 )
 
 var (
-	ExceptionOptions = []string{"Window Title", "OS Process", "Times (cron format)"}
+	ExceptionOptions = []string{"Window Title", "OS Process", "User Idle", "Times (cron format)"}
 	HowOptions       = []string{"Pause all nudges", "Stop all nudges", "Ignore this exception"}
-	NudgeOptions     = []string{"Rest regularly", "Meditate regularly", "Excercise regularly", "Have a healthy meal", "Pomodoro timer", "Reminder (cron format)"}
+	NudgeOptions     = []string{"Rest regularly", "Reminder (cron format)"}
 )
 
 type Exception struct {
@@ -83,8 +83,9 @@ type Config struct {
 	app fyne.App
 
 	// General config
-	AutoStart binding.Bool
-	Systray   binding.Bool
+	AutoStart  binding.Bool
+	Systray    binding.Bool
+	EnableLogs binding.Bool
 
 	// UI config
 	ReminderNotification binding.Bool
@@ -94,12 +95,17 @@ type Config struct {
 	FullScreenWindow     binding.Bool
 	AllScreens           binding.Bool
 	ReminderAdvance      binding.Float
+	MaxImageWidth        binding.Float
+	MaxImageHeight       binding.Float
 
 	// Exceptions config
 	Exceptions binding.UntypedList
 
 	// Nudges config
 	Nudges binding.UntypedList
+
+	// Statistics
+	Statistics binding.UntypedMap
 }
 
 func New(app fyne.App) *Config {
@@ -107,14 +113,18 @@ func New(app fyne.App) *Config {
 		app:                  app,
 		AutoStart:            binding.NewBool(),
 		Systray:              binding.NewBool(),
+		EnableLogs:           binding.NewBool(),
 		ReminderNotification: binding.NewBool(),
 		ReminderBeep:         binding.NewBool(),
 		ShowWindow:           binding.NewBool(),
 		FullScreenWindow:     binding.NewBool(),
 		AllScreens:           binding.NewBool(),
 		ReminderAdvance:      binding.NewFloat(),
+		MaxImageWidth:        binding.NewFloat(),
+		MaxImageHeight:       binding.NewFloat(),
 		Exceptions:           binding.NewUntypedList(),
 		Nudges:               binding.NewUntypedList(),
+		Statistics:           binding.NewUntypedMap(),
 	}
 	ret.Read()
 
@@ -124,6 +134,12 @@ func New(app fyne.App) *Config {
 func (c *Config) NotificationRollDur() time.Duration {
 	val, _ := c.ReminderAdvance.Get()
 	return time.Duration(float64(time.Minute) * val)
+}
+
+func (c *Config) GetMaxImageSize() fyne.Size {
+	w, _ := c.MaxImageWidth.Get()
+	h, _ := c.MaxImageHeight.Get()
+	return fyne.NewSize(float32(w), float32(h))
 }
 
 func (c *Config) Read() {
@@ -142,12 +158,15 @@ func (c *Config) ReadGeneral() {
 	p := c.app.Preferences()
 	c.AutoStart.Set(p.BoolWithFallback(AUTO_START, true))
 	c.Systray.Set(p.BoolWithFallback(HIDE_TO_SYSTRAY, true))
+	c.EnableLogs.Set(p.BoolWithFallback(ENABLE_LOGS, true))
 	c.ReminderNotification.Set(p.BoolWithFallback(REMINDER_NOTIFICATION, true))
 	c.ReminderBeep.Set(p.BoolWithFallback(REMINDER_BEEP, true))
 	c.ShowWindow.Set(p.BoolWithFallback(NUDGE_WINDOW_SHOW, true))
 	c.FullScreenWindow.Set(p.BoolWithFallback(NUDGE_WINDOW_FULLSCREEN, true))
 	c.AllScreens.Set(p.BoolWithFallback(NUDGE_WINDOW_ALL_SCREENS, true))
 	c.ReminderAdvance.Set(p.FloatWithFallback(REMINDER_ADVANCE, 1))
+	c.MaxImageWidth.Set(p.FloatWithFallback(MAX_IMAGE_WIDTH, 400))
+	c.MaxImageHeight.Set(p.FloatWithFallback(MAX_IMAGE_HEIGHT, 600))
 }
 
 func (c *Config) WriteGeneral() {
@@ -156,6 +175,8 @@ func (c *Config) WriteGeneral() {
 	p.SetBool(AUTO_START, bVal)
 	bVal, _ = c.Systray.Get()
 	p.SetBool(HIDE_TO_SYSTRAY, bVal)
+	bVal, _ = c.EnableLogs.Get()
+	p.SetBool(ENABLE_LOGS, bVal)
 	bVal, _ = c.ReminderNotification.Get()
 	p.SetBool(REMINDER_NOTIFICATION, bVal)
 	bVal, _ = c.ReminderBeep.Get()
@@ -168,6 +189,10 @@ func (c *Config) WriteGeneral() {
 	p.SetBool(NUDGE_WINDOW_ALL_SCREENS, bVal)
 	fVal, _ := c.ReminderAdvance.Get()
 	p.SetFloat(REMINDER_ADVANCE, fVal)
+	fVal, _ = c.MaxImageWidth.Get()
+	p.SetFloat(MAX_IMAGE_WIDTH, fVal)
+	fVal, _ = c.MaxImageHeight.Get()
+	p.SetFloat(MAX_IMAGE_HEIGHT, fVal)
 }
 
 func (c *Config) ReadExceptions() {
